@@ -10,16 +10,17 @@ The TryHackMe VPN Shortcut Maker script automates the process of setting up a sh
 - This script requires root privileges to execute. Make sure to run it with `sudo`.
 
 ## Installation
-1. Download the `thm` script from this repository.
-2. Make sure the script is executable by running:
+1. Download the `thm and install.sh` script from this repository.
+2. link:`https://github.com/ZawwanZ/tryhackmevpn-shortcut.git`
+3. Make sure the script is executable by running:
    ```bash
-   chmod +x thm
+   chmod +x *
    ```
-3. Run the script with `sudo` to install the VPN shortcut:
+4. Run the script with `sudo` to install the VPN shortcut:
    ```bash
-   sudo ./thm
+   sudo ./install.sh
    ```
-
+5. ## Enjoy
 ## Usage
 After successful installation, you can use the following command to start the TryHackMe VPN connection:
 ```bash
