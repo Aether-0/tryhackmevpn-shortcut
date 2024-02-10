@@ -64,7 +64,7 @@ Git Hub : https://github.com/ZawwanZ
 
 Usage: $0 {-s|--start} {-S|--stop}
            -h|--help for help
-           -l|--lear for free room list
+           -l|--learn for free room list
            -k|--suicide to suicide your pc
 EOF
 }                                                 
