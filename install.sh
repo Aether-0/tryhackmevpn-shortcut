@@ -27,6 +27,7 @@ sudo chmod +x "/usr/bin/$main"
 # Check if the main script is installed
 if command -v "$main" &> /dev/null; then
     echo "Installation completed successfully."
+    echo "You can run $main everywehere"
 else
     echo "Failed to install $main. Please check if it's in your PATH."
 fi
