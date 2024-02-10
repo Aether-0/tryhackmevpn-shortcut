@@ -1,0 +1,47 @@
+#!/bin/bash
+
+start_vpn() {
+    # Start OpenVPN in the background and store its PID
+    nohup sudo openvpn /opt/thmvpn.ovpn > /dev/null 2>&1 &
+    echo "OpenVPN started."
+}
+
+stop_vpn() {
+    # Stop OpenVPN
+    sudo pkill openvpn
+    echo "OpenVPN stopped."
+}
+
+help() {
+    cat << EOF
+mmmmmmm m    m m    m        m    m mmmmm  mm   m
+   #    #    # ##  ##        "m  m" #   "# #"m  #
+   #    #mmmm# # ## #         #  #  #mmm#" # #m #
+   #    #    # # "" #  """    "mm"  #      #  # #
+   #    #    # #    #          ##   #      #   ##                                
+
+Made with love by Zaw Wanz
+Git Hub : https://github.com/ZawwanZ
+
+Usage: $0 {-s|--start} {-S|--stop}
+           -h|--help for help
+EOF
+}                                                 
+
+
+case "$1" in
+    -s|--start)
+        start_vpn
+        ;;
+    -S|--stop)
+        stop_vpn
+        ;;
+    -h|--help)
+        help
+        ;;
+    *)
+        echo "Usage: $0 {-s|--start} {-S|--stop} {-h|--help}"
+        exit 1
+        ;;
+
+esac
