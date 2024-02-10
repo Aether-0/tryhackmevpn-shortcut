@@ -23,6 +23,7 @@ usage() {
     echo "Options:"
     echo "  -v <VPN_FILE_PATH>  Specify the path to the VPN configuration file."
     echo "  -h                   Display this help message."
+    echo "  -n                   To install new vpn file."
 }
 
 # Function to install only VPN file
