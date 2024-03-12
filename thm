@@ -2,7 +2,7 @@
 
 start_vpn() {
     # Start OpenVPN in the background and store its PID
-    nohup sudo openvpn /opt/thmvpn.ovpn > /dev/null 2>&1 &
+    sudo nohup openvpn /opt/thmvpn.ovpn > /dev/null 2>&1 &
     echo "OpenVPN started."
 }
 
