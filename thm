@@ -10,6 +10,7 @@ check_sudo() {
 start_vpn() {
     check_sudo
     sudo nohup openvpn /opt/thmvpn.ovpn > /dev/null 2>&1 &
+    sleep 3
     vpn_ip=$(ifconfig tun0 | grep -oE 'inet ([0-9]{1,3}\.){3}[0-9]{1,3}' | cut -d' ' -f2)
     echo "Your Try Hack Me VPN IP: $vpn_ip"
     echo "OpenVPN started."
@@ -115,4 +116,3 @@ case "$1" in
         ;;
 
 esac
-
