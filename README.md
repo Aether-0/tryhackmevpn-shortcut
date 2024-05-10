@@ -11,7 +11,7 @@ The TryHackMe VPN Shortcut Maker script automates the process of setting up a sh
 
 ## Installation
 1. Download the `thm and install.sh` script from this repository.
-2. link:`https://github.com/ZawwanZ/tryhackmevpn-shortcut.git`
+2. link:`https://github.com/Aether-0/tryhackmevpn-shortcut.git`
 3. Make sure the script is executable by running:
    ```bash
    chmod +x *
