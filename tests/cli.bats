@@ -253,3 +253,73 @@ import_demo() {
     tail() { [ "$LOCK_HELD" -eq 0 ] && [ ! -e "$RUNTIME/operation.lock" ]; }
     main logs --follow
 }
+
+@test "learn aliases work without sudo, VPN dependencies or storage" {
+    mkdir "$BATS_TEST_TMPDIR/bin"
+    cat >"$BATS_TEST_TMPDIR/bin/curl" <<'MOCK'
+#!/bin/bash
+cat "$REPO/tests/fixtures/rooms.md"
+MOCK
+    chmod +x "$BATS_TEST_TMPDIR/bin/curl"
+    export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
+    export THM_ROOT="$BATS_TEST_TMPDIR/learning-only"
+    local alias
+    for alias in learn -l --learn rooms; do
+        run "$REPO/thm" "$alias" linux
+        [ "$status" -eq 0 ]
+        [[ "$output" == *'Linux Basics'* ]]
+        [[ "$output" != *'Premium Linux'* ]]
+        [[ "$output" != *'Web Basics'* ]]
+        [ ! -e "$THM_ROOT" ]
+    done
+}
+
+@test "room topics, random choice and plain piped output" {
+    fetch_rooms() { cat "$REPO/tests/fixtures/rooms.md"; }
+    run browse_rooms --topics
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'Networking'* ]]
+    [[ "$output" != *'demo-linux'* ]]
+    run browse_rooms --random web
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'Web Basics | https://tryhackme.com/r/room/demo-web'* ]]
+    [[ "$output" != *'Duplicate'* ]]
+    run browse_rooms
+    [ "$status" -eq 0 ]
+    [[ "$output" != *'example.invalid'* ]]
+}
+
+@test "room search is literal and failures remain visible" {
+    fetch_rooms() { cat "$REPO/tests/fixtures/rooms.md"; }
+    run browse_rooms '.*'
+    [ "$status" -ne 0 ]
+    [[ "$output" == *'No rooms matched'* ]]
+    run browse_rooms --topics extra
+    [ "$status" -ne 0 ]
+    fetch_rooms() { return 1; }
+    run browse_rooms
+    [ "$status" -ne 0 ]
+    fetch_rooms() { printf '# source format changed\n'; }
+    run browse_rooms
+    [ "$status" -ne 0 ]
+    [[ "$output" == *'source may have changed'* ]]
+}
+
+@test "download failure does not hide errors behind the pager" {
+    mkdir "$BATS_TEST_TMPDIR/bin"
+    printf '#!/bin/bash\nexit 22\n' >"$BATS_TEST_TMPDIR/bin/curl"
+    chmod +x "$BATS_TEST_TMPDIR/bin/curl"
+    export PATH="$BATS_TEST_TMPDIR/bin:$PATH"
+    run "$REPO/thm" -l
+    [ "$status" -ne 0 ]
+    [[ "$output" == *'Could not download the room list'* ]]
+}
+
+@test "resources work offline without privileges or storage" {
+    export THM_ROOT="$BATS_TEST_TMPDIR/learning-only"
+    run "$REPO/thm" resources
+    [ "$status" -eq 0 ]
+    [[ "$output" == *'https://tryhackme.com/hacktivities'* ]]
+    [[ "$output" == *'winterrdog/tryhackme-free-rooms'* ]]
+    [ ! -e "$THM_ROOT" ]
+}

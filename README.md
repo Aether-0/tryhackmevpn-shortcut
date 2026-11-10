@@ -1,7 +1,7 @@
 # TryHackMe VPN Shortcut
 
 A small Bash CLI for named TryHackMe OpenVPN profiles, accurate connection status,
-private logs, and diagnostics. Originally created by Zaw Wanz.
+private logs, diagnostics, and room discovery. Originally created by Zaw Wanz.
 
 Version 2.0 keeps your terminal free and controls only its own OpenVPN connection.
 
@@ -23,13 +23,13 @@ Install dependencies on Kali, Ubuntu, or Debian:
 
 ~~~bash
 sudo apt update
-sudo apt install openvpn socat
+sudo apt install openvpn socat curl
 ~~~
 
 On macOS, use Homebrew as your normal user:
 
 ~~~bash
-brew install openvpn socat
+brew install openvpn socat curl
 ~~~
 
 Install the CLI:
@@ -52,8 +52,8 @@ sudo thm stop
 ~~~
 
 The installer checks dependencies before copying files into /usr/local. It does
-not install packages, create boot services, or change sudoers. Help and version
-work without sudo; profile and connection commands require sudo.
+not install packages, create boot services, or change sudoers. Help, version,
+and the learning commands work without sudo; profile and connection commands require sudo.
 
 See [TryHackMe's official connection guide](https://help.tryhackme.com/en/articles/6496038-connecting-to-openvpn-on-linux-and-mac).
 This independent project is unaffiliated with TryHackMe and serves users who
@@ -74,6 +74,10 @@ prefer a scriptable terminal workflow.
 | ip | Print the VPN IP only; nonzero exit unless connected |
 | logs [--follow] | Show the last 50 log lines; optionally follow |
 | doctor | Inspect dependencies, storage, locks, profiles, and connection |
+| learn [SEARCH ...] / -l / --learn / rooms | Browse and search the community room catalogue |
+| learn --topics | List topics such as Linux, web, networking, and forensics |
+| learn --random [SEARCH ...] | Pick a room, optionally within a topic/search |
+| resources | Show learning paths, room browser, and VPN help links offline |
 | --help / --version | Show help or version without sudo |
 | -k / --suicide | Harmless terminal joke; changes no files and needs no sudo |
 
@@ -85,6 +89,31 @@ starting a different profile. Only one connection is managed.
 Profile names start with a letter or digit and contain letters, digits,
 underscores, or hyphens. Existing names are never overwritten; stop, remove, and
 import again to replace one. Removing the default clears the selection.
+
+## Find something to learn
+
+~~~bash
+thm -l                       # Original free-room list command
+thm learn linux              # Search titles, categories, and URLs
+thm rooms "privilege escalation"
+thm learn --topics           # Show available categories
+thm learn --random web       # Suggest one matching room
+thm resources                # Offline learning and help links
+~~~
+
+Room browsing fetches the current community catalogue maintained by
+[winterrdog](https://github.com/winterrdog/tryhackme-free-rooms). It requires curl
+and an internet connection, but no VPN or sudo. Search is case-insensitive and
+literal. Results include titles, topics, and room links. Entries struck through
+by the maintainer are skipped, and duplicate URLs are shown once.
+
+This community list is not an official guarantee of free access: room availability
+and pricing may change. Check TryHackMe before joining. The CLI strips terminal
+control characters and never executes downloaded content.
+
+An interactive terminal uses less if installed; pipes and systems without less
+receive plain text. Downloads fail visibly with a timeout. There is no local
+catalogue cache; resources still works offline.
 
 ## Profile and process safety
 
@@ -164,8 +193,9 @@ The installer preserves legacy files. Check type -a thm and use
 new install, you may manually remove the legacy /usr/bin/thm and /opt/thmvpn.ovpn.
 
 The old destructive behavior has been removed. The -k/--suicide command remains
-as a harmless joke that only prints text. The unrelated room-list feature has
-been removed. Connection commands now require explicit sudo.
+as a harmless joke that only prints text. The original -l/--learn room browser
+is preserved and extended with search, topics, and random selection.
+Connection commands now require explicit sudo.
 
 ## Uninstall
 

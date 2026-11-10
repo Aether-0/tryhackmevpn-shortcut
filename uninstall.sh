@@ -16,13 +16,13 @@ if [ -e /var/run/thm/operation.lock ] || [ -e /var/run/thm/active ] || [ -S /var
     printf 'Stop the managed connection and resolve any stale state before uninstalling.\n' >&2
     exit 1
 fi
-for file in /usr/local/bin/thm /usr/local/lib/thm/thm /usr/local/lib/thm/lib/common.sh /usr/local/lib/thm/lib/profiles.sh /usr/local/lib/thm/lib/vpn.sh; do
+for file in /usr/local/bin/thm /usr/local/lib/thm/thm /usr/local/lib/thm/lib/common.sh /usr/local/lib/thm/lib/profiles.sh /usr/local/lib/thm/lib/vpn.sh /usr/local/lib/thm/lib/learn.sh; do
     [ ! -L "$file" ] || {
         printf 'Refusing symlink: %s\n' "$file" >&2
         exit 1
     }
 done
-for file in /usr/local/bin/thm /usr/local/lib/thm/thm /usr/local/lib/thm/lib/common.sh /usr/local/lib/thm/lib/profiles.sh /usr/local/lib/thm/lib/vpn.sh; do
+for file in /usr/local/bin/thm /usr/local/lib/thm/thm /usr/local/lib/thm/lib/common.sh /usr/local/lib/thm/lib/profiles.sh /usr/local/lib/thm/lib/vpn.sh /usr/local/lib/thm/lib/learn.sh; do
     rm -f -- "$file"
 done
 rmdir /usr/local/lib/thm/lib /usr/local/lib/thm 2>/dev/null || true

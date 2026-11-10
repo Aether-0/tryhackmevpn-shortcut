@@ -38,4 +38,6 @@ jobs:
           ln -s /bin/bash "$RUNNER_TEMP/system-bash/bash"
           export PATH="$RUNNER_TEMP/system-bash:$PATH"
           bash --version
+          # Keep Unix socket paths below macOS sockaddr_un limits.
+          export TMPDIR=/tmp
           bats tests

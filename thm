@@ -9,6 +9,8 @@ source "$THM_SOURCE/lib/common.sh"
 source "$THM_SOURCE/lib/profiles.sh"
 # shellcheck source=lib/vpn.sh
 source "$THM_SOURCE/lib/vpn.sh"
+# shellcheck source=lib/learn.sh
+source "$THM_SOURCE/lib/learn.sh"
 
 usage() {
     cat <<'HELP'
@@ -24,9 +26,13 @@ Usage: thm COMMAND
   profile list          List profiles (* marks the default)
   profile use NAME      Select the default for future connections
   profile remove NAME   Remove an inactive profile
+  learn [SEARCH ...]    Browse/search the community free-room catalogue
+  learn --topics        List room topics
+  learn --random [TERM] Suggest a room, optionally filtered by a search term
+  resources             Show learning paths, room browser and VPN help links
   -k, --suicide         Harmless self-destruction joke (no files changed)
   --help, --version     Available without sudo
-Aliases: -s/--start, -S/--stop, -h/--help
+Aliases: -s/--start, -S/--stop, -h/--help, -l/--learn, rooms
 Profile and connection commands require sudo. macOS support is experimental.
 HELP
 }
@@ -41,6 +47,16 @@ main() {
     -h | --help | help)
         [ "$#" -eq 1 ] || die 'Unexpected arguments'
         usage
+        return
+        ;;
+    learn | -l | --learn | rooms)
+        shift
+        browse_rooms "$@"
+        return
+        ;;
+    resources)
+        [ "$#" -eq 1 ] || die 'Usage: thm resources'
+        learning_resources
         return
         ;;
     -k | --suicide)

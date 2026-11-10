@@ -17,13 +17,14 @@ Run from the repository root:
 ~~~bash
 shellcheck -x thm install.sh uninstall.sh lib/*.sh
 shfmt -d -i 4 thm install.sh uninstall.sh lib/*.sh tests/*.bats
-bats tests
+TMPDIR=/tmp bats tests
 ~~~
 
 Tests source the CLI, replace the privilege check only in the test process, and
 use a temporary THM_ROOT directory. The production EUID check has no environment
 bypass. The Python helper imitates OpenVPN over Unix sockets; it creates no tunnel.
-No root, credentials, or TryHackMe access are needed.
+No root, credentials, or TryHackMe access are needed. Room-browser tests use a
+synthetic Markdown fixture and mock curl; they need no network access.
 
 THM_ROOT relocates storage for development. THM_INSTALL_ROOT stages installation
 for packaging tests. Never use untrusted paths for privileged real operations.

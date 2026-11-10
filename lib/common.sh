@@ -13,7 +13,7 @@ die() {
     printf 'Error: %s\n' "$*" >&2
     exit 1
 }
-require_root() { [ "$EUID" -eq 0 ] || die 'Run this command with sudo. Help and version do not need sudo.'; }
+require_root() { [ "$EUID" -eq 0 ] || die 'Run this command with sudo. Help, version, learn and resources do not need sudo.'; }
 
 private_dir() {
     local path=$1

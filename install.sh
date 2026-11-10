@@ -11,7 +11,7 @@ install_main() {
     [ "$#" -eq 0 ] || die 'Usage: sudo bash install.sh (old -v/-n options are replaced by thm profile add).'
     require_root
     dependencies
-    for file in thm lib/common.sh lib/profiles.sh lib/vpn.sh; do
+    for file in thm lib/common.sh lib/profiles.sh lib/vpn.sh lib/learn.sh; do
         [ -f "$SOURCE/$file" ] || die "Missing source: $file"
         bash -n "$SOURCE/$file" || die "Invalid Bash syntax: $file"
     done
@@ -27,7 +27,7 @@ install_main() {
         fi
     done
     install -d -m 755 "$DEST" "$DEST/lib" "$prefix/bin"
-    for file in thm lib/common.sh lib/profiles.sh lib/vpn.sh; do
+    for file in thm lib/common.sh lib/profiles.sh lib/vpn.sh lib/learn.sh; do
         [ ! -L "$DEST/$file" ] || die "Refusing symlink: $DEST/$file"
         install -m 644 "$SOURCE/$file" "$DEST/$file"
     done
