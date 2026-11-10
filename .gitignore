@@ -1,0 +1,9 @@
+# Profiles and credentials must stay out of the repository.
+*.ovpn
+!tests/fixtures/*.ovpn
+*.key
+*.pem
+*.crt
+*.log
+__pycache__/
+.DS_Store

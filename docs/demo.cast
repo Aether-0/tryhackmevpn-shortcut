@@ -1,0 +1,10 @@
+{"version": 2, "width": 100, "height": 24, "title": "thm 2.0 \u2014 dummy-data demo (no VPN)"}
+[0.1, "o", "$ thm profile add demo dummy.ovpn\r\n$ thm profile use demo\r\n$ thm start; thm status; thm ip; thm stop\r\n"]
+[0.5, "o", "Imported demo. Select it with: sudo thm profile use demo\r\n"]
+[1.0, "o", "Default profile: demo\r\n"]
+[1.5, "o", "Connected: demo (10.23.4.5)\r\n"]
+[2.0, "o", "Profile: demo\r\n"]
+[2.5, "o", "State: CONNECTED\r\n"]
+[3.0, "o", "VPN IP: 10.23.4.5\r\n"]
+[3.5, "o", "10.23.4.5\r\n"]
+[4.0, "o", "Disconnected.\r\n"]

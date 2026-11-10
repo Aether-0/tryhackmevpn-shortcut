@@ -1,118 +1,109 @@
 #!/bin/bash
+# TryHackMe VPN manager; Bash 3.2+.
+set -euo pipefail
+THM_VERSION=2.0.0
+THM_SOURCE=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+# shellcheck source=lib/common.sh
+source "$THM_SOURCE/lib/common.sh"
+# shellcheck source=lib/profiles.sh
+source "$THM_SOURCE/lib/profiles.sh"
+# shellcheck source=lib/vpn.sh
+source "$THM_SOURCE/lib/vpn.sh"
 
-check_sudo() {
-    if [ "$(id -u)" != "0" ]; then
-        echo "This script must be run with sudo. Please use sudo to execute this script."
-        exit 1
-    fi
-}
-
-start_vpn() {
-    check_sudo
-    sudo nohup openvpn /opt/thmvpn.ovpn > /dev/null 2>&1 &
-    sleep 3
-    vpn_ip=$(ifconfig tun0 | grep -oE 'inet ([0-9]{1,3}\.){3}[0-9]{1,3}' | cut -d' ' -f2)
-    echo "Your Try Hack Me VPN IP: $vpn_ip"
-    echo "OpenVPN started."
-}
-
-
-stop_vpn() {
-    check_sudo
-    sudo pkill openvpn
-    echo "OpenVPN stopped."
-}
-
-banner(){
-    NO_FORMAT="\033[0m"
-F_BOLD="\033[1m"
-C_RED3="\033[38;5;160m"
-echo -e "${F_BOLD}${C_RED3}
-
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣠⣤⣶⢶⣻⣟⣿⣻⣟⡶⣶⣤⣄⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣴⢿⡽⣯⢷⣯⠿⠳⠟⠾⠳⠯⢟⣷⣻⣞⣯⣟⣦⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⣾⣻⣞⣯⠟⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠘⠻⣾⣳⣯⢷⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣾⣻⣞⡷⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠙⢾⢯⣟⡷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⣟⣷⣻⠎⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣯⢿⡽⣆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣿⣞⣷⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⣿⣽⣻⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⢾⡽⡎⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⢾⣽⣳⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⢀⣠⣴⡶⣿⣻⡽⣯⢿⣽⡶⣦⣤⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡿⣾⣽⣻⣟⣿⣻⣟⡷⣶⣤⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⢀⣶⡿⣿⣾⣹⣷⢿⠹⠿⢿⣾⣹⣏⣷⣿⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣿⣏⡿⣷⣏⣷⠿⠾⢷⣏⡿⣷⣏⡿⣷⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡀⣀⣀⢀⣀⡀⣀⣀⢀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⣰⣟⣷⣻⠷⠋⠁⠀⠀⠀⠀⠀⠀⠉⠘⠷⠯⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠻⠾⠝⠁⠀⠀⠀⠀⠀⠀⠈⠑⠫⣿⣳⣟⣧⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⣼⣟⣾⡳⠋⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠳⣟⡾⣷⡄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠉⣿⣿⣿⠉⠉⠉⠉⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⢰⡿⣞⡷⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢹⣟⣷⣳⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠀⠀⠀⠀⠀⢸⣿⡇⣠⣶⣿⣿⡇⠀⠀⣿⣿⡇⠀⠀⠀⠀⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⣿⣽⣻⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢿⢾⡽⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠀⠀⠀⠀⠀⢸⣿⣿⡿⠋⠉⠉⠁⠀⠀⣿⣿⡇⠀⠀⠀⠀⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⣿⢾⡽⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠀⠀⠀⠀⠀⢸⣿⣿⡇⠀⠀⠀⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⣸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⢹⣯⣟⣧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⣴⡶⠀⠀⣠⡶⠶⣦⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⣶⠀⠀⢠⡶⠶⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠀⠀⠀⠀⠀⢸⣿⣿⡇⠀⠀⠀⠀⠀⠀⢿⣿⣷⣄⣀⣀⣠⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⢿⢾⣽⣣⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠋⢸⣟⠀⠀⣿⠁⠀⡿⡇⠀⠀⠀⠀⠀⠀⠈⠋⢱⣯⠀⠀⣿⠇⠀⢹⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⣿⠀⠀⠀⠀⠀⢸⣿⣿⡇⠀⠀⠀⠀⠀⠀⠈⠻⣿⣿⣿⣿⡿⢿⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠈⢻⡾⣽⣻⢦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣽⠀⠀⡿⡆⠀⣿⡅⠀⠀⠀⠀⠀⠀⠀⠀⢸⣯⠀⠀⣯⡇⠀⣼⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠀⠀⠀⠀⠀⠈⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⣀⣀⠈⠉⠀⣀⣾⣿⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠙⢯⣟⣯⢿⡷⣶⢦⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⣤⡀⠀⠀⠀⠸⠷⠀⠀⠙⠷⠶⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠸⠷⠀⠀⠘⠷⠶⠛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠺⢿⣿⣿⣿⣿⣿⡿⠟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠈⠙⠯⠿⣽⣻⣞⣷⣻⣞⣷⣻⣞⣷⣻⣞⣷⣻⣞⣷⣻⣞⣷⣻⣞⡷⠇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣟⡿⠀⠀⠀⠀⠀⠀⣿⣻⠷⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠉⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣻⠇⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠁⠈⠀⠀⠀⠀⠀⣠⣤⠀⠀⠀⢀⣤⡄⠀⠀⠀⣠⣤⠀⠀⢀⣠⣤⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣯⢿⠀⠀⠀⠀⠀⠀⣿⣽⣛⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⡽⡇⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⠾⢻⣿⠀⠀⢰⠟⣿⡇⠀⠀⠾⢻⣿⠀⠀⣾⡏⠈⢻⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣽⣻⠀⠀⠀⠀⠀⠀⣿⢾⣭⠀⠀⠀⠀⢀⣴⢶⣾⣳⣶⣤⣰⢶⡆⠀⠀⠀⠀⣠⣴⢶⣶⢷⡶⣤⡀⠀⠀⠀⣯⣟⡇⠀⠀⠀⣴⡶⡶⠂
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠀⠀⠀⠀⣿⡇⠀⠀⠀⢸⣿⠀⠀⣿⡇⠀⢸⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⡷⣯⣟⣿⣻⣟⣿⣻⣽⣻⢶⠀⠀⠀⣰⡿⣽⠛⠊⠑⠛⢾⡽⣯⡇⠀⠀⢀⣾⣻⠾⠛⠈⠛⠹⠷⠁⠀⠀⠀⣿⣞⡇⠀⢀⣾⣳⡟⠁⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠀⠀⠀⠀⣿⡇⠀⠀⠀⢸⣿⠀⠀⠹⣧⣤⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣟⡷⠋⠚⠑⠋⠚⠑⣯⣟⣧⠀⠀⠀⣿⡽⡇⠀⠀⠀⠀⠀⣿⢷⡃⠀⠀⢸⣷⣻⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⣷⢯⣟⡿⣽⡾⡃⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣯⢿⠀⠀⠀⠀⠀⠀⣿⣞⣧⠀⠀⠀⢯⣟⣧⡀⠀⠀⠀⣠⡿⣯⡇⠀⠀⠸⣾⡽⣄⠀⠀⠀⠀⡀⠀⠀⠀⠀⡿⣯⠏⠉⠳⣟⡿⣆⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡶⢦⡀⢀⣴⡆⠀⢠⠶⢦⡀⢀⣴⡆⠀⠀⠀⠀⠀⠀⢀⡶⠲⣄⠀⣠⣶⠀⠀⠀⠀⠀⠀⠀⠀⢸⣽⣻⠀⠀⠀⠀⠀⠀⣷⣻⢮⠀⠀⠀⠈⢟⣾⣽⡶⣶⣻⢯⢟⡷⡇⠀⠀⠀⠑⢿⣻⢷⡶⣶⢿⣻⠆⠀⠀⠀⣿⡽⡇⠀⠀⠈⢿⣽⣦⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⢸⠇⠈⢰⡇⠀⣿⠀⢸⡇⠈⢰⡇⠀⠀⠀⠀⠀⠀⢸⡇⠀⣿⠀⠁⣿⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠹⣄⣼⠃⠀⢸⡅⠀⠹⣄⡼⠂⠀⢸⡇⠀⠀⠀⠀⠀⠀⠘⣧⣠⡟⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡴⢦⡀⢀⣠⡄⠀⢠⡴⢦⡀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣷⡄⠀⠀⠀⠀⠀⠀⠀⢠⣾⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡼⠙⡆⠔⣇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢾⠀⢸⠇⠈⠀⡗⠀⣿⠀⢸⡅⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣿⣦⡀⠀⠀⠀⢀⣴⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀⠀⣀⣀⣀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠳⠴⠃⠀⠧⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠘⠦⠼⠃⠀⠀⠏⠀⠸⠦⠼⠁⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠻⣿⣷⣄⠀⣠⣾⣿⠟⣿⣿⡇⠀⠀⠀⠀⣠⣾⣿⣿⣿⣿⣿⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⡴⢲⡀⡠⡆⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠘⢿⣿⣿⣿⡿⠃⠀⣿⣿⡇⠀⠀⠀⣸⣿⣿⠋⠀⠀⠈⢻⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢇⣰⠇⠀⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀⠀⠹⣿⠏⠀⠀⠀⣿⣿⡇⠀⠀⠀⣿⣿⣿⠿⠿⠿⠿⠿⠿⠿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⡇⠀⠀⠀⠹⣿⣿⣄⡀⠀⢀⣀⣄⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⣿⡇⠀⠀⠀⠀⠙⠿⣿⣿⣿⣿⣿⠿⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
-
-${NO_FORMAT}"
-}
-
-help() {
-    banner
-    cat << EOF
-Made with love by Zaw Wanz
-Git Hub : https://github.com/ZawwanZ
-
-Usage: $0 {-s|--start} {-S|--stop}
-           -h|--help for help
-           -l|--learn for free room list
-           -k|--suicide to suicide your pc
-EOF
-}                                                 
-
-learn(){
-    curl -s https://raw.githubusercontent.com/winterrdog/tryhackme-free-rooms/main/README.md | less
+usage() {
+    cat <<'HELP'
+Usage: thm COMMAND
+  start [NAME]          Connect a named or default profile (30 second timeout)
+  stop                  Disconnect only the managed VPN
+  restart               Restart the active or default profile
+  status                Show connection state and assigned VPN IP
+  ip                    Print the connected VPN IP only
+  logs [--follow]       Show the last 50 log lines, optionally follow
+  doctor                Inspect dependencies, permissions, locks and connection
+  profile add NAME FILE Import a trusted, self-contained TryHackMe .ovpn file
+  profile list          List profiles (* marks the default)
+  profile use NAME      Select the default for future connections
+  profile remove NAME   Remove an inactive profile
+  -k, --suicide         Harmless self-destruction joke (no files changed)
+  --help, --version     Available without sudo
+Aliases: -s/--start, -S/--stop, -h/--help
+Profile and connection commands require sudo. macOS support is experimental.
+HELP
 }
 
 suicide() {
-    xdg-open "https://www.youtube.com/watch?v=0bu9lRcazKo" > /dev/null 2>&1 
-    read -p "Are you sure you want to proceed? [y/Y]" answer
-    if [ "$answer" == "y" ] || [ "$answer" == "Y" ]; then
-        echo "Good luck with new operating system :("
-        sudo rm -rf /boot
-    fi
+    printf 'Initiating dramatic self-destruction...\n'
+    printf 'Just kidding. Your /boot is safe. Happy hacking!\n'
 }
 
-
-case "$1" in
-    -s|--start)
-        start_vpn
+main() {
+    case "${1:-}" in
+    -h | --help | help)
+        [ "$#" -eq 1 ] || die 'Unexpected arguments'
+        usage
+        return
         ;;
-    -S|--stop)
+    -k | --suicide)
+        [ "$#" -eq 1 ] || die 'Usage: thm --suicide'
+        suicide
+        return
+        ;;
+    --version)
+        [ "$#" -eq 1 ] || die 'Unexpected arguments'
+        printf 'thm %s\n' "$THM_VERSION"
+        return
+        ;;
+    '')
+        usage
+        return 2
+        ;;
+    start | --start | -s | stop | --stop | -S | restart | status | ip | logs | doctor | profile) ;;
+    *) die "Unknown command: $1. See thm --help." ;;
+    esac
+    require_root
+    if [ "$1" = doctor ]; then
+        [ "$#" -eq 1 ] || die 'Usage: thm doctor'
+        doctor
+        return
+    fi
+    init_storage
+    acquire_lock
+    case "$1" in
+    start | --start | -s)
+        [ "$#" -le 2 ] || die 'Usage: thm start [NAME]'
+        dependencies
+        start_vpn "${2:-}"
+        ;;
+    stop | --stop | -S)
+        [ "$#" -eq 1 ] || die 'Usage: thm stop'
+        dependencies
         stop_vpn
         ;;
-    -h|--help)
-        help
+    restart)
+        [ "$#" -eq 1 ] || die 'Usage: thm restart'
+        dependencies
+        local name=''
+        if [ -f "$RUNTIME/active" ]; then name=$(cat "$RUNTIME/active"); fi
+        stop_vpn
+        start_vpn "$name"
         ;;
-    -l|--learn)
-        learn
+    status | ip)
+        [ "$#" -eq 1 ] || die "Usage: thm $1"
+        dependencies
+        show_status "$1"
         ;;
-    -k|--suicide)
-        suicide
-;;
-    *)
-        echo "Usage: $0 {-s|--start} {-S|--stop} {-h|--help}"
-        exit 1
+    logs)
+        [ "$#" -eq 1 ] || { [ "$#" -eq 2 ] && [ "$2" = --follow ]; } || die 'Usage: thm logs [--follow]'
+        [ -f "$RUNTIME/connection.log" ] || die 'No connection log yet.'
+        release_lock
+        if [ "${2:-}" = --follow ]; then tail -n 50 -f "$RUNTIME/connection.log"; else tail -n 50 "$RUNTIME/connection.log"; fi
         ;;
+    profile)
+        shift
+        profiles "$@"
+        ;;
+    esac
+    release_lock
+}
 
-esac
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then main "$@"; fi

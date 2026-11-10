@@ -1,0 +1,41 @@
+name: Bash checks
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  check:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: /bin/bash -e -o pipefail {0}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install Linux tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck shfmt bats socat python3
+      - name: Install macOS tools
+        if: runner.os == 'macOS'
+        run: brew install shellcheck shfmt bats-core socat python
+      - name: Syntax and static analysis
+        run: |
+          for file in thm install.sh uninstall.sh lib/*.sh; do /bin/bash -n "$file"; done
+          shellcheck -x thm install.sh uninstall.sh lib/*.sh
+          shfmt -d -i 4 thm install.sh uninstall.sh lib/*.sh tests/*.bats
+      - name: Mock lifecycle tests
+        run: |
+          mkdir -p "$RUNNER_TEMP/system-bash"
+          ln -s /bin/bash "$RUNNER_TEMP/system-bash/bash"
+          export PATH="$RUNNER_TEMP/system-bash:$PATH"
+          bash --version
+          bats tests
